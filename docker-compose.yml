@@ -30,8 +30,13 @@ services:
     network_mode: host
 
     environment:
-      # --- WhatsApp target (REQUIRED) ---
-      WHATSAPP_GROUP_JID: "${WHATSAPP_GROUP_JID:?set WHATSAPP_GROUP_JID in the .env file or here}"
+      # --- WhatsApp target ---
+      # Optional at the Compose layer so the `list-groups` discovery
+      # mode can start without a JID.  When the daemon runs in
+      # production mode (LIST_GROUPS_ON_START unset and
+      # GROUP_MATCH_KEYWORD unset), the Node.js config loader will
+      # throw a clear error if this is still empty.
+      WHATSAPP_GROUP_JID: "${WHATSAPP_GROUP_JID:-}"
 
       # --- Minecraft server (REQUIRED) ---
       # When network_mode: host is on, 127.0.0.1 = the host's localhost,
@@ -54,6 +59,15 @@ services:
       HIGH_PING_FAIL_COUNT: "${HIGH_PING_FAIL_COUNT:-3}"
       TPS_THRESHOLD: "${TPS_THRESHOLD:-18.0}"
       LOG_LEVEL: "${LOG_LEVEL:-info}"
+
+      # --- Group JID discovery (one-shot modes) ---
+      # Set LIST_GROUPS_ON_START=true to have the daemon log every
+      # group the connected WhatsApp account is a member of and exit.
+      # Set GROUP_MATCH_KEYWORD=foo to auto-pick the first group whose
+      # subject contains "foo" (case-insensitive) and exit.
+      # Leave both unset for the normal long-running daemon mode.
+      LIST_GROUPS_ON_START: "${LIST_GROUPS_ON_START:-false}"
+      GROUP_MATCH_KEYWORD: "${GROUP_MATCH_KEYWORD:-}"
 
     volumes:
       # Persist the WhatsApp multi-device auth - without this, you
