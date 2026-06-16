@@ -67,7 +67,7 @@ export async function runPickGroupMode(client: WhatsAppClient, cfg: AppConfig): 
   process.exit(0);
 }
 
-function printGroupsTable(groups: GroupEntry[]): void {
+export function printGroupsTable(groups: GroupEntry[]): void {
   if (groups.length === 0) return;
   const subjWidth = Math.max(8, ...groups.map((g) => g.subject.length));
   const jidWidth = Math.max(3, ...groups.map((g) => g.jid.length));
