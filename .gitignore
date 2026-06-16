@@ -1,0 +1,13 @@
+# Build artefacts
+node_modules/
+dist/
+.env
+auth_info/
+*.log
+.DS_Store
+.idea/
+.vscode/
+*.tsbuildinfo
+
+# Docker build context
+casaos-data/

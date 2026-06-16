@@ -1,0 +1,17 @@
+# Build artefacts
+node_modules/
+dist/
+.npm/
+
+# Local env + auth
+.env
+auth_info/
+
+# Editor / OS
+.idea/
+.vscode/
+.DS_Store
+*.swp
+
+# CasaOS data dir (only present if you `cd` into the project on the host)
+casaos-data/

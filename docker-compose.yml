@@ -1,0 +1,118 @@
+# =============================================================================
+# MineWatch - CasaOS / generic Docker Compose definition.
+#
+# Place this file on the CasaOS host.  Edit the `environment` block to
+# match your Minecraft server, then deploy via:
+#   - CasaOS UI:  App Store -> "Custom Install" -> paste this file
+#   - CLI:        docker compose up -d
+# =============================================================================
+
+services:
+  minewatch:
+    # ---- image: build from the Dockerfile in this directory ----
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: minewatch:1.0.0
+    container_name: minewatch
+    restart: unless-stopped
+
+    # MineWatch needs to reach the Minecraft server, which on CasaOS
+    # usually runs on the SAME host but inside its own container (or
+    # sometimes as a bare-metal process on the host).  Easiest, most
+    # robust solution: use the host network namespace so localhost on
+    # the container IS localhost on the host.
+    #
+    # If you'd rather isolate the network, comment out the next two
+    # lines and set `network_mode: bridge` (default) plus reach the MC
+    # server via `host.docker.internal` (Mac/Win) or the host's LAN IP
+    # / 172.17.0.1 (Linux bridge).
+    network_mode: host
+
+    environment:
+      # --- WhatsApp target (REQUIRED) ---
+      WHATSAPP_GROUP_JID: "${WHATSAPP_GROUP_JID:?set WHATSAPP_GROUP_JID in the .env file or here}"
+
+      # --- Minecraft server (REQUIRED) ---
+      # When network_mode: host is on, 127.0.0.1 = the host's localhost,
+      # which is exactly what we want when the MC server is on the same
+      # CasaOS box.
+      MC_HOST: "${MC_HOST:-127.0.0.1}"
+      MC_PORT: "${MC_PORT:-25565}"
+      MC_RCON_PORT: "${MC_RCON_PORT:-25575}"
+      MC_RCON_PASSWORD: "${MC_RCON_PASSWORD:-}"
+
+      # Absolute path inside the container = absolute path on the host
+      # when network_mode: host.  Adjust to your MC install's log path.
+      MC_LOG_PATH: "${MC_LOG_PATH:-/DATA/Minecraft/logs/latest.log}"
+
+      # --- Thresholds (optional, defaults shown) ---
+      POLL_INTERVAL_MS: "${POLL_INTERVAL_MS:-5000}"
+      LATENCY_INTERVAL_MS: "${LATENCY_INTERVAL_MS:-10000}"
+      PING_THRESHOLD_MS: "${PING_THRESHOLD_MS:-150}"
+      DOWN_FAIL_COUNT: "${DOWN_FAIL_COUNT:-3}"
+      HIGH_PING_FAIL_COUNT: "${HIGH_PING_FAIL_COUNT:-3}"
+      TPS_THRESHOLD: "${TPS_THRESHOLD:-18.0}"
+      LOG_LEVEL: "${LOG_LEVEL:-info}"
+
+    volumes:
+      # Persist the WhatsApp multi-device auth - without this, you
+      # would have to re-scan the QR after every container restart.
+      - ./auth_info:/app/auth_info
+
+    # Memory + CPU caps.  MineWatch is a tiny background daemon;
+      # a hard ceiling of 256 MB / 0.5 CPU is plenty and keeps a
+      # runaway loop from eating the headroom reserved for the MC
+      # server.
+    mem_limit: 256m
+    mem_reservation: 64m
+    cpus: 0.5
+
+    # Logging via the standard json-file driver; cap at ~10 MB per
+    # container so logs don't grow without bound on a long-running
+    # daemon.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # The `healthcheck` block here is supplementary - the Dockerfile
+    # already declares a process-level healthcheck (pgrep).  We re-state
+    # it here so `docker inspect` reports it for the running service.
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "node dist/index.js"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+# =============================================================================
+# CasaOS custom-app metadata.  CasaOS reads this `x-casaos` block to
+# populate the app card in the UI (icon, title, category, port, etc.).
+# Standard Compose ignores unknown top-level keys, so this is harmless
+# on plain `docker compose`.
+# =============================================================================
+x-casaos:
+  title: MineWatch
+  description: >-
+    Minecraft-to-WhatsApp monitor. Watches a self-hosted Minecraft Java
+    server (state, ping, TPS, player sessions) and forwards alerts to a
+    WhatsApp group via the WhatsApp Web multi-device protocol.
+  icon: https://raw.githubusercontent.com/twitter/twemoji/master/assets/72x72/1f5e3.png
+  category: Tools
+  tagline: Minecraft -> WhatsApp alert bridge
+  # arch: amd64 arm64 - CasaOS picks the right tag.
+  main: minewatch
+  # No HTTP port - daemon is a pure outbound WhatsApp client.
+  # CasaOS will still display the container, just without a "Web UI".
+  ports: []
+  env_management: true
+  settings:
+    - WHATSAPP_GROUP_JID
+    - MC_HOST
+    - MC_PORT
+    - MC_RCON_PORT
+    - MC_RCON_PASSWORD
+    - MC_LOG_PATH
+  development: false
