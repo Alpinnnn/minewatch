@@ -25,7 +25,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@whiskeysockets/baileys": "^6.7.0",
+    "@whiskeysockets/baileys": "^6.7.18",
     "dotenv": "^16.4.5",
     "minecraft-server-util": "^5.0.0",
     "pino": "^9.4.0"
