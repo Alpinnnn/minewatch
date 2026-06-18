@@ -133,7 +133,7 @@ export class WhatsAppClient {
               'QR code rendered to PNG inside the auth volume - copy this file to a device that can display it, then scan with WhatsApp Linked Devices.',
             );
           })
-          .catch((err) => {
+          .catch((err: Error) => {
             logger.warn({ err }, 'Failed to render QR as PNG; only the raw string above is available.');
           });
       }

@@ -33,6 +33,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.14.0",
+    "@types/qrcode": "^1.5.5",
     "pino-pretty": "^11.2.2",
     "rimraf": "^6.0.1",
     "ts-node": "^10.9.2",
