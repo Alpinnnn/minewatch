@@ -6,6 +6,7 @@ import {
   AnyMessageContent,
   BaileysEventMap,
   GroupMetadata,
+  Browsers,
 } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
 import * as fs from 'fs';
@@ -96,7 +97,11 @@ export class WhatsAppClient {
       // it, and in Docker/CasaOS logs the operator pipes the daemon
       // output through any external QR tool they like.
       logger: logger.child({ module: 'baileys' }) as any,
-      browser: ['MineWatch', 'Daemon', '1.0.0'],
+      // Use a real desktop-Chrome fingerprint so WhatsApp's anti-abuse
+      // layer accepts the registration.  A custom name like
+      // `['MineWatch', 'Daemon', '1.0.0']` looks suspicious and gets
+      // rejected with status 405 before a QR is even issued.
+      browser: Browsers.ubuntu('Chrome'),
       syncFullHistory: false,
       markOnlineOnConnect: false,
     });
