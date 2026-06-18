@@ -11,6 +11,7 @@ import {
 import { Boom } from '@hapi/boom';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as QRCode from 'qrcode';
 import { logger } from './logger';
 import { AppConfig } from './config';
 
@@ -48,7 +49,7 @@ export class WhatsAppClient {
    * Wait for the underlying socket to be fully open and authenticated.
    * Used by the one-shot group discovery modes.
    */
-  async waitForOpen(timeoutMs = 60_000): Promise<void> {
+  async waitForOpen(timeoutMs = 300_000): Promise<void> {
     if (this.connected && this.sock) return;
     await new Promise<void>((resolve, reject) => {
       const timer = setTimeout(() => {
@@ -120,6 +121,21 @@ export class WhatsAppClient {
             qr +
             '\n========================================\n',
         );
+        // Also render the QR as a PNG inside the mounted auth volume
+        // so an operator without a TTY (typical Docker / CasaOS
+        // setup) can copy it out and scan it with the phone.  The
+        // file path is logged for easy retrieval.
+        const qrPngPath = path.join(this.cfg.whatsapp.authDir, 'qr.png');
+        QRCode.toFile(qrPngPath, qr, { type: 'png', width: 512, margin: 2 })
+          .then(() => {
+            logger.info(
+              { path: qrPngPath },
+              'QR code rendered to PNG inside the auth volume - copy this file to a device that can display it, then scan with WhatsApp Linked Devices.',
+            );
+          })
+          .catch((err) => {
+            logger.warn({ err }, 'Failed to render QR as PNG; only the raw string above is available.');
+          });
       }
       if (connection === 'open') {
         this.connected = true;

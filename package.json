@@ -24,11 +24,12 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "dependencies": {
-    "@whiskeysockets/baileys": "latest",
+"dependencies": {
+    "@whiskeysockets/baileys": "^6.7.0",
     "dotenv": "^16.4.5",
     "minecraft-server-util": "^5.0.0",
-    "pino": "^9.4.0"
+    "pino": "^9.4.0",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",
