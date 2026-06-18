@@ -8,6 +8,13 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
+# `git` is needed because some npm packages (including recent
+# @whiskeysockets/baileys versions and their transitive deps) run
+# `git` in their install / prepare lifecycle scripts.  node:20-alpine
+# does not ship git by default.  Keep the layer size minimal with
+# --no-cache.
+RUN apk add --no-cache git
+
 # Install ALL deps (including dev) for the build.
 COPY package.json package-lock.json* ./
 RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
