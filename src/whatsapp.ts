@@ -90,6 +90,28 @@ export class WhatsAppClient {
   private async connect(): Promise<void> {
     const { state, saveCreds } = await useMultiFileAuthState(this.cfg.whatsapp.authDir);
 
+    // Optional client-version override.  Baileys ships a `version`
+    // tuple (e.g. [2, 3000, 1023223821]) that WhatsApp uses to fingerprint
+    // the client.  Recent Baileys defaults are rejected with HTTP 405
+    // during the noise handshake (no QR is even emitted).  We let the
+    // operator pin a known-good version via WHATSAPP_CLIENT_VERSION
+    // (format: "primary.secondary.tertiary").  Default below is a
+    // version WhatsApp still accepts as of mid-2026.
+    let versionOverride: [number, number, number] | undefined;
+    const envVer = process.env.WHATSAPP_CLIENT_VERSION;
+    if (envVer) {
+      const parts = envVer.split('.').map((p) => Number.parseInt(p, 10));
+      if (parts.length === 3 && parts.every((n) => Number.isFinite(n))) {
+        versionOverride = parts as [number, number, number];
+        logger.info({ version: versionOverride }, 'Overriding Baileys client version via env.');
+      } else {
+        logger.warn(
+          { value: envVer },
+          'WHATSAPP_CLIENT_VERSION is malformed; expected "primary.secondary.tertiary". Falling back to Baileys default.',
+        );
+      }
+    }
+
     this.sock = makeWASocket({
       auth: state,
       // Note: do NOT pass `printQRInTerminal` here - that option was
@@ -103,6 +125,10 @@ export class WhatsAppClient {
       // `['MineWatch', 'Daemon', '1.0.0']` looks suspicious and gets
       // rejected with status 405 before a QR is even issued.
       browser: Browsers.ubuntu('Chrome'),
+      // Apply the version override if set; otherwise let Baileys use
+      // its bundled default (which may or may not be accepted by
+      // WhatsApp depending on the release date).
+      ...(versionOverride ? { version: versionOverride } : {}),
       syncFullHistory: false,
       markOnlineOnConnect: false,
     });
